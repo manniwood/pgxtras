@@ -14,6 +14,7 @@ jobs:
     # openssl and it does it in a way Go and/or pgx ssl handling code can't handle. So stick with Ubuntu 20.04 until
     # that is figured out.
     runs-on: ubuntu-20.04
+    timeout-minutes: 30
 
     strategy:
       matrix:
