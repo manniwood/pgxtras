@@ -1,5 +1,7 @@
 package pgxtras_test
 
+// This is copied from github.com/jackc/pgx/helper_test.go
+
 import (
 	"context"
 	"os"

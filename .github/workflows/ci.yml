@@ -1,5 +1,7 @@
 name: CI
 
+# This file is a copy of github.com/jackc/pgx/.github/workflows/ci.yml
+
 on:
   push:
     branches: [ main ]

@@ -46,7 +46,11 @@ func TestSnakeToCamel(t *testing.T) {
 		input string
 		want  string
 	}{
-		"typical": {input: "a_col_name", want: "AColName"},
+		"one segment":         {input: "col", want: "Col"},
+		"typical":             {input: "a_col_name", want: "AColName"},
+		"empty":               {input: "", want: ""},
+		"leading underscore":  {input: "_a_col", want: "ACol"},
+		"trailing underscore": {input: "a_col_", want: "ACol"},
 	}
 	for testName, testCase := range tests {
 		t.Run(testName, func(t *testing.T) {

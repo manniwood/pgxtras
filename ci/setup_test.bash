@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -eux
 
+# This file is a copy of github.com/jackc/pgx/ci/setup_test.bash
+
 if [[ "${PGVERSION-}" =~ ^[0-9.]+$ ]]
 then
   sudo apt-get remove -y --purge postgresql libpq-dev libpq5 postgresql-client-common postgresql-common
