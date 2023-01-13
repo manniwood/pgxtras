@@ -63,7 +63,7 @@ func (rs *namedCamelStructRowScanner) ScanRow(rows pgx.Rows) error {
 
 	for i, t := range scanTargets {
 		if t == nil {
-			return fmt.Errorf("struct doesn't have corresponding row field %s", rows.FieldDescriptions()[i].Name)
+			return fmt.Errorf("struct doesn't have corresponding field to match returned column %s", rows.FieldDescriptions()[i].Name)
 		}
 	}
 
@@ -134,7 +134,7 @@ func (rs *namedCamelStructRowScanner) appendScanTargets(dstElemValue reflect.Val
 			}
 			fpos := fieldPosByCamelName(fldDescs, colName)
 			if fpos == -1 || fpos >= len(scanTargets) {
-				return nil, fmt.Errorf("cannot find field %s in returned row", colName)
+				return nil, fmt.Errorf("no column in returned row matches struct field %s", colName)
 			}
 			scanTargets[fpos] = dstElemValue.Field(i).Addr().Interface()
 		}

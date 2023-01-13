@@ -38,9 +38,6 @@ func TestCollectOneRowOKNotFound(t *testing.T) {
 	})
 }
 
-// TODO: TestRowToStructBySnakeToCamelName
-// TODO: TestRowToAddrOfStructBySnakeToCamelName
-
 func TestSnakeToCamel(t *testing.T) {
 	tests := map[string]struct {
 		input string
@@ -61,4 +58,104 @@ func TestSnakeToCamel(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRowToStructBySnakeToCamelName(t *testing.T) {
+	type person struct {
+		LastName      string
+		FirstName     string
+		LikesStarTrek bool
+		Age           int32
+	}
+
+	defaultConnTestRunner.RunTest(context.Background(), t, func(ctx context.Context, t testing.TB, conn *pgx.Conn) {
+		rows, _ := conn.Query(ctx, `
+select 'John'  as first_name,
+       'Smith' as last_name,
+       true    as likes_star_trek,
+       n       as age
+  from generate_series(0, 9) n`)
+		slice, err := pgx.CollectRows(rows, pgxtras.RowToStructBySnakeToCamelName[person])
+		assert.NoError(t, err)
+
+		assert.Len(t, slice, 10)
+		for i := range slice {
+			assert.Equal(t, "Smith", slice[i].LastName)
+			assert.Equal(t, "John", slice[i].FirstName)
+			assert.True(t, slice[i].LikesStarTrek)
+			assert.EqualValues(t, i, slice[i].Age)
+		}
+
+		// check missing fields in a returned row
+		rows, _ = conn.Query(ctx, `
+select 'Smith' as last_name,
+       true    as likes_star_trek,
+       n       as age
+  from generate_series(0, 9) n`)
+		_, err = pgx.CollectRows(rows, pgx.RowToStructByName[person])
+		assert.ErrorContains(t, err, "no column in returned row matches struct field FirstName")
+
+		// check missing field in a destination struct
+		rows, _ = conn.Query(ctx, `
+select 'John'  as first_name,
+       'Smith' as last_name,
+       true    as likes_star_trek,
+       n       as age,
+       null    as ignore
+  from generate_series(0, 9) n`)
+		_, err = pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[person])
+		assert.ErrorContains(t, err, "struct doesn't have corresponding field to match returned column ignore")
+	})
+}
+
+func TestRowToStructBySnakeToCamelNameEmbeddedStruct(t *testing.T) {
+	type Name struct {
+		LastName  string
+		FirstName string
+	}
+
+	type person struct {
+		Name
+		LikesStarTrek bool
+		Age           int32
+	}
+
+	defaultConnTestRunner.RunTest(context.Background(), t, func(ctx context.Context, t testing.TB, conn *pgx.Conn) {
+		rows, _ := conn.Query(ctx, `
+select 'John'  as first_name,
+       'Smith' as last_name,
+       true    as likes_star_trek,
+       n       as age
+  from generate_series(0, 9) n`)
+		slice, err := pgx.CollectRows(rows, pgx.RowToStructByName[person])
+		assert.NoError(t, err)
+
+		assert.Len(t, slice, 10)
+		for i := range slice {
+			assert.Equal(t, "Smith", slice[i].Name.LastName)
+			assert.Equal(t, "John", slice[i].Name.FirstName)
+			assert.True(t, slice[i].LikesStarTrek)
+			assert.EqualValues(t, i, slice[i].Age)
+		}
+
+		// check missing fields in a returned row
+		rows, _ = conn.Query(ctx, `
+select 'Smith' as last_name,
+       true    as likes_star_trek,
+       n       as age
+  from generate_series(0, 9) n`)
+		_, err = pgx.CollectRows(rows, pgx.RowToStructByName[person])
+		assert.ErrorContains(t, err, "no column in returned row matches struct field FirstName")
+
+		// check missing field in a destination struct
+		rows, _ = conn.Query(ctx, `
+select 'John'  as first_name,
+       'Smith' as last_name,
+       true    as likes_star_trek,
+       n       as age,
+       null    as ignore
+  from generate_series(0, 9) n`)
+		_, err = pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[person])
+		assert.ErrorContains(t, err, "struct doesn't have corresponding field to match returned column ignore")
+	})
 }
