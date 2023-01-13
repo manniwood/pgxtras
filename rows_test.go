@@ -92,7 +92,7 @@ select 'Smith' as last_name,
        true    as likes_star_trek,
        n       as age
   from generate_series(0, 9) n`)
-		_, err = pgx.CollectRows(rows, pgx.RowToStructByName[person])
+		_, err = pgx.CollectRows(rows, pgxtras.RowToStructBySnakeToCamelName[person])
 		assert.ErrorContains(t, err, "no column in returned row matches struct field FirstName")
 
 		// check missing field in a destination struct
@@ -103,7 +103,7 @@ select 'John'  as first_name,
        n       as age,
        null    as ignore
   from generate_series(0, 9) n`)
-		_, err = pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[person])
+		_, err = pgx.CollectRows(rows, pgxtras.RowToAddrOfStructBySnakeToCamelName[person])
 		assert.ErrorContains(t, err, "struct doesn't have corresponding field to match returned column ignore")
 	})
 }
@@ -127,7 +127,7 @@ select 'John'  as first_name,
        true    as likes_star_trek,
        n       as age
   from generate_series(0, 9) n`)
-		slice, err := pgx.CollectRows(rows, pgx.RowToStructByName[person])
+		slice, err := pgx.CollectRows(rows, pgxtras.RowToStructBySnakeToCamelName[person])
 		assert.NoError(t, err)
 
 		assert.Len(t, slice, 10)
@@ -144,7 +144,7 @@ select 'Smith' as last_name,
        true    as likes_star_trek,
        n       as age
   from generate_series(0, 9) n`)
-		_, err = pgx.CollectRows(rows, pgx.RowToStructByName[person])
+		_, err = pgx.CollectRows(rows, pgxtras.RowToStructBySnakeToCamelName[person])
 		assert.ErrorContains(t, err, "no column in returned row matches struct field FirstName")
 
 		// check missing field in a destination struct
@@ -155,7 +155,7 @@ select 'John'  as first_name,
        n       as age,
        null    as ignore
   from generate_series(0, 9) n`)
-		_, err = pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[person])
+		_, err = pgx.CollectRows(rows, pgxtras.RowToAddrOfStructBySnakeToCamelName[person])
 		assert.ErrorContains(t, err, "struct doesn't have corresponding field to match returned column ignore")
 	})
 }
