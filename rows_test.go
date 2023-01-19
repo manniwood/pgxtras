@@ -159,3 +159,123 @@ select 'John'  as first_name,
 		assert.ErrorContains(t, err, "struct doesn't have corresponding field to match returned column ignore")
 	})
 }
+
+func TestRowToStructBySimpleName(t *testing.T) {
+	type person struct {
+		ID            int
+		HTTPHandler   string
+		LastName      string
+		FirstName     string
+		LikesStarTrek bool
+		Age           int32
+	}
+
+	defaultConnTestRunner.RunTest(context.Background(), t, func(ctx context.Context, t testing.TB, conn *pgx.Conn) {
+		rows, _ := conn.Query(ctx, `
+select 1       as id,
+       'foo'   as http_handler,
+       'John'  as first_name,
+       'Smith' as last_name,
+       true    as likes_star_trek,
+       n       as age
+  from generate_series(0, 9) n`)
+		slice, err := pgx.CollectRows(rows, pgxtras.RowToStructBySimpleName[person])
+		assert.NoError(t, err)
+
+		assert.Len(t, slice, 10)
+		for i := range slice {
+			assert.Equal(t, 1, slice[i].ID)
+			assert.Equal(t, "foo", slice[i].HTTPHandler)
+			assert.Equal(t, "Smith", slice[i].LastName)
+			assert.Equal(t, "John", slice[i].FirstName)
+			assert.True(t, slice[i].LikesStarTrek)
+			assert.EqualValues(t, i, slice[i].Age)
+		}
+
+		// check missing fields in a returned row
+		rows, _ = conn.Query(ctx, `
+select 1       as id,
+       'foo'   as http_handler,
+      'Smith' as last_name,
+       true    as likes_star_trek,
+       n       as age
+  from generate_series(0, 9) n`)
+		_, err = pgx.CollectRows(rows, pgxtras.RowToStructBySimpleName[person])
+		assert.ErrorContains(t, err, "no column in returned row matches struct field FirstName")
+
+		// check missing field in a destination struct
+		rows, _ = conn.Query(ctx, `
+select 1       as id,
+       'foo'   as http_handler,
+       'John'  as first_name,
+       'Smith' as last_name,
+       true    as likes_star_trek,
+       n       as age,
+       null    as ignore
+  from generate_series(0, 9) n`)
+		_, err = pgx.CollectRows(rows, pgxtras.RowToAddrOfStructBySimpleName[person])
+		assert.ErrorContains(t, err, "struct doesn't have corresponding field to match returned column ignore")
+	})
+}
+
+func TestRowToStructBySimpleNameEmbeddedStruct(t *testing.T) {
+	type Name struct {
+		LastName  string
+		FirstName string
+	}
+
+	type person struct {
+		Name
+		LikesStarTrek bool
+		Age           int32
+		ID            int
+		HTTPHandler   string
+	}
+
+	defaultConnTestRunner.RunTest(context.Background(), t, func(ctx context.Context, t testing.TB, conn *pgx.Conn) {
+		rows, _ := conn.Query(ctx, `
+select 1       as id,
+       'foo'   as http_handler,
+       'John'  as first_name,
+       'Smith' as last_name,
+       true    as likes_star_trek,
+       n       as age
+  from generate_series(0, 9) n`)
+		slice, err := pgx.CollectRows(rows, pgxtras.RowToStructBySimpleName[person])
+		assert.NoError(t, err)
+
+		assert.Len(t, slice, 10)
+		for i := range slice {
+			assert.Equal(t, 1, slice[i].ID)
+			assert.Equal(t, "foo", slice[i].HTTPHandler)
+			assert.Equal(t, "Smith", slice[i].Name.LastName)
+			assert.Equal(t, "John", slice[i].Name.FirstName)
+			assert.True(t, slice[i].LikesStarTrek)
+			assert.EqualValues(t, i, slice[i].Age)
+		}
+
+		// check missing fields in a returned row
+		rows, _ = conn.Query(ctx, `
+select 1       as id,
+       'foo'   as http_handler,
+       'Smith' as last_name,
+       true    as likes_star_trek,
+       n       as age
+  from generate_series(0, 9) n`)
+		_, err = pgx.CollectRows(rows, pgxtras.RowToStructBySimpleName[person])
+		assert.ErrorContains(t, err, "no column in returned row matches struct field FirstName")
+
+		// check missing field in a destination struct
+		rows, _ = conn.Query(ctx, `
+select 1       as id,
+       'foo'   as http_handler,
+       'John'  as first_name,
+       'Smith' as last_name,
+       true    as likes_star_trek,
+       n       as age,
+       null    as ignore
+  from generate_series(0, 9) n`)
+		_, err = pgx.CollectRows(rows, pgxtras.RowToAddrOfStructBySimpleName[person])
+		assert.ErrorContains(t, err, "struct doesn't have corresponding field to match returned column ignore")
+	})
+}

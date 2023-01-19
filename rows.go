@@ -142,3 +142,112 @@ func (rs *namedCamelStructRowScanner) appendScanTargets(dstElemValue reflect.Val
 
 	return scanTargets, err
 }
+
+// RowToStructBySimpleName returns a T scanned from row. T must be a struct. T must have
+// the same number of named public
+// fields as row has fields. The row and T fields will by matched by name.
+// The matching will be done on the "simple" names of each row column
+// and each struct field. A "simple" name is lowercased with
+// all underscores removed.
+func RowToStructBySimpleName[T any](row pgx.CollectableRow) (T, error) {
+	var value T
+	err := row.Scan(&simpleNameStructRowScanner{ptrToStruct: &value})
+	return value, err
+}
+
+// RowToStructBySimpleName returns the addresss of a T scanned from row.
+// T must be a struct. T must have
+// the same number of named public
+// fields as row has fields. The row and T fields will by matched by name.
+// The matching will be done on the "simple" names of each row column
+// and each struct field. A "simple" name is lowercased with
+// all underscores removed.
+func RowToAddrOfStructBySimpleName[T any](row pgx.CollectableRow) (*T, error) {
+	var value T
+	err := row.Scan(&simpleNameStructRowScanner{ptrToStruct: &value})
+	return &value, err
+}
+
+type simpleNameStructRowScanner struct {
+	ptrToStruct any
+}
+
+func (rs *simpleNameStructRowScanner) ScanRow(rows pgx.Rows) error {
+	dst := rs.ptrToStruct
+	dstValue := reflect.ValueOf(dst)
+	if dstValue.Kind() != reflect.Ptr {
+		return fmt.Errorf("dst not a pointer")
+	}
+
+	dstElemValue := dstValue.Elem()
+	scanTargets, err := rs.appendScanTargets(dstElemValue, nil, rows.FieldDescriptions())
+
+	if err != nil {
+		return err
+	}
+
+	for i, t := range scanTargets {
+		if t == nil {
+			return fmt.Errorf("struct doesn't have corresponding field to match returned column %s", rows.FieldDescriptions()[i].Name)
+		}
+	}
+
+	return rows.Scan(scanTargets...)
+}
+
+func fieldPosBySimpleName(fldDescs []pgconn.FieldDescription, field string) (i int) {
+	i = -1
+	for i, desc := range fldDescs {
+		if strings.EqualFold(
+			strings.ReplaceAll(desc.Name, "_", ""),
+			strings.ReplaceAll(field, "_", ""),
+		) {
+			return i
+		}
+	}
+	return
+}
+
+func (rs *simpleNameStructRowScanner) appendScanTargets(dstElemValue reflect.Value, scanTargets []any, fldDescs []pgconn.FieldDescription) ([]any, error) {
+	var err error
+	dstElemType := dstElemValue.Type()
+
+	if scanTargets == nil {
+		scanTargets = make([]any, len(fldDescs))
+	}
+
+	for i := 0; i < dstElemType.NumField(); i++ {
+		sf := dstElemType.Field(i)
+		if sf.PkgPath != "" && !sf.Anonymous {
+			// Field is unexported, skip it.
+			continue
+		}
+		// Handle anoymous struct embedding, but do not try to handle embedded pointers.
+		if sf.Anonymous && sf.Type.Kind() == reflect.Struct {
+			scanTargets, err = rs.appendScanTargets(dstElemValue.Field(i), scanTargets, fldDescs)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			dbTag, dbTagPresent := sf.Tag.Lookup(structTagKey)
+			if dbTagPresent {
+				dbTag = strings.Split(dbTag, ",")[0]
+			}
+			if dbTag == "-" {
+				// Field is ignored, skip it.
+				continue
+			}
+			colName := dbTag
+			if !dbTagPresent {
+				colName = sf.Name
+			}
+			fpos := fieldPosBySimpleName(fldDescs, colName)
+			if fpos == -1 || fpos >= len(scanTargets) {
+				return nil, fmt.Errorf("no column in returned row matches struct field %s", colName)
+			}
+			scanTargets[fpos] = dstElemValue.Field(i).Addr().Interface()
+		}
+	}
+
+	return scanTargets, err
+}
