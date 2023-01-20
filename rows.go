@@ -145,7 +145,7 @@ func (rs *namedCamelStructRowScanner) appendScanTargets(dstElemValue reflect.Val
 
 // RowToStructBySimpleName returns a T scanned from row. T must be a struct. T must have
 // the same number of named public
-// fields as row has fields. The row and T fields will by matched by name.
+// fields as row has columns. The row columns and T fields will by matched by name.
 // The matching will be done on the "simple" names of each row column
 // and each struct field. A "simple" name is lowercased with
 // all underscores removed.
@@ -155,10 +155,9 @@ func RowToStructBySimpleName[T any](row pgx.CollectableRow) (T, error) {
 	return value, err
 }
 
-// RowToStructBySimpleName returns the addresss of a T scanned from row.
-// T must be a struct. T must have
+// RowToStructBySimpleName returns the address of a T scanned from row. T must be a struct. T must have
 // the same number of named public
-// fields as row has fields. The row and T fields will by matched by name.
+// fields as row has columns. The row columns and T fields will by matched by name.
 // The matching will be done on the "simple" names of each row column
 // and each struct field. A "simple" name is lowercased with
 // all underscores removed.
