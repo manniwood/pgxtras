@@ -81,14 +81,14 @@ a different approach. SQL column names and Go struct fields are compared with
 each other by lowercasing and stripping all underscores, like so:
 
 ```
-SQL column name   "simple" name      Go struct field name
+SQL column name   "simple" name    Go struct field name
 ---------------------------------------------------------
-first_name`   ==> `firsname`    <== `FirstName`
-last_name`    ==> `lastname`    <== `LastName`
-name`         ==> `name`        <== `Name`
-city`         ==> `city`        <== `City`
-id`           ==> `id`          <== `ID`
-http_address` ==> `httpaddress` <== `HTTPAddress`
+first_name    ==> firsname     <== FirstName
+last_name     ==> lastname     <== LastName
+name          ==> name         <== Name
+city          ==> city         <== City
+id            ==> id           <== ID
+http_address  ==> httpaddress  <== HTTPAddress
 ```
 
 This way of determining which SQL column names go with which Go struct field
