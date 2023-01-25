@@ -94,3 +94,16 @@ http_address  ==> httpaddress  <== HTTPAddress
 This way of determining which SQL column names go with which Go struct field
 names should cover a lot more of the standard naming conventions of both
 languages.
+
+## Interfaces `Querier`, `Execer`, and `QuerierExecer`
+
+I end up using these interfaces a lot in my code: instead of using concrete
+`pgx.Conn`, `pgxpool.Pool`, `pgx.Tx`, and `pgxpool.Tx` arguments in
+my functions and methods, I just use one of `Querier`, `Execer`, or
+`QuerierExecer` instead. This way, my data access functions and methods
+are not restricted to just using one of `pgx.Conn`, `pgxpool.Pool`, `pgx.Tx`,
+or `pgxpool.Tx`.
+
+If you only intend to use these interfaces, don't bother importing this
+whole module; just cut and paste these interfaces into your own project;
+the license on this module is quite permissive.
