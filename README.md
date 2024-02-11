@@ -95,6 +95,17 @@ This way of determining which SQL column names go with which Go struct field
 names should cover a lot more of the standard naming conventions of both
 languages.
 
+## `pgxtras.RowToMapStrStr()`
+
+pgx has `pgx.RowToMap()` which returns a `map[string]any`.
+
+pgxtras has `pgxtras.RowToMapStrStr()` which returns a `map[string]string`.
+Internally, `RowToMapStrStr()` just uses `fmt.Sprintf("%v", val)`. If you want
+to control the string representation of your column, I recommend doing so
+in your SQL statement: if every column in your SQL result set is already
+of Postgres type `text`, then you know what you will be getting when
+Go does `fmt.Sprintf("%v", val)` to it.
+
 ## Interfaces `Querier`, `Execer`, and `QuerierExecer`
 
 I end up using these interfaces a lot in my code: instead of using concrete
