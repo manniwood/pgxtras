@@ -250,3 +250,28 @@ func (rs *simpleNameStructRowScanner) appendScanTargets(dstElemValue reflect.Val
 
 	return scanTargets, err
 }
+
+// RowToMapStrStr returns a map scanned from row.
+func RowToMapStrStr(row pgx.CollectableRow) (map[string]string, error) {
+	var value map[string]string
+	err := row.Scan((*mapStrStrRowScanner)(&value))
+	return value, err
+}
+
+type mapStrStrRowScanner map[string]string
+
+func (rs *mapStrStrRowScanner) ScanRow(rows pgx.Rows) error {
+	values, err := rows.Values()
+	if err != nil {
+		return err
+	}
+
+	*rs = make(mapStrStrRowScanner, len(values))
+
+	for i := range values {
+		str := fmt.Sprintf("%v", values[i])
+		(*rs)[string(rows.FieldDescriptions()[i].Name)] = str
+	}
+
+	return nil
+}
