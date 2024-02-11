@@ -2,12 +2,14 @@ package pgxtras_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jackc/pgx/v5"
 	"github.com/manniwood/pgxtras"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCollectOneRowOK(t *testing.T) {
@@ -277,5 +279,19 @@ select 1       as id,
   from generate_series(0, 9) n`)
 		_, err = pgx.CollectRows(rows, pgxtras.RowToAddrOfStructBySimpleName[person])
 		assert.ErrorContains(t, err, "struct doesn't have corresponding field to match returned column ignore")
+	})
+}
+
+func TestRowToMapStrStr(t *testing.T) {
+	defaultConnTestRunner.RunTest(context.Background(), t, func(ctx context.Context, t testing.TB, conn *pgx.Conn) {
+		rows, _ := conn.Query(ctx, `select 'Joe' as name, n::text as age from generate_series(0, 9) n`)
+		slice, err := pgx.CollectRows(rows, pgxtras.RowToMapStrStr)
+		require.NoError(t, err)
+
+		assert.Len(t, slice, 10)
+		for i := range slice {
+			assert.Equal(t, "Joe", slice[i]["name"])
+			assert.EqualValues(t, fmt.Sprintf("%d", i), slice[i]["age"])
+		}
 	})
 }
