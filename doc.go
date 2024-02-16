@@ -56,16 +56,16 @@ Here is an obvious example:
 
 In translating SQL column names to Go struct field names, one would expect
 
-    name ==> Name
-    city ==> City
+	name ==> Name
+	city ==> City
 
 But following strict camel-casing rules, we get this translation:
 
-    id ==> Id
+	id ==> Id
 
 whereas surely we would prefer
 
-    id ==> ID
+	id ==> ID
 
 (To get CamelCase struct field `ID` from a snake-case column name, the column
 would have to be named `i_d`. Yuk.)
@@ -78,14 +78,14 @@ So `pgxtras.RowToStructBySimpleName()` and `pgxtras.RowToAddrOfStructBySimpleNam
 a different approach. SQL column names and Go struct fields are compared with
 each other by lowercasing and stripping all underscores, like so:
 
-    SQL column name   "simple" name      Go struct field name
-    ---------------------------------------------------------
-    first_name`   ==> `firsname`    <== `FirstName`
-    last_name`    ==> `lastname`    <== `LastName`
-    name`         ==> `name`        <== `Name`
-    city`         ==> `city`        <== `City`
-    id`           ==> `id`          <== `ID`
-    http_address` ==> `httpaddress` <== `HTTPAddress`
+	SQL column name   "simple" name      Go struct field name
+	---------------------------------------------------------
+	first_name`   ==> `firsname`    <== `FirstName`
+	last_name`    ==> `lastname`    <== `LastName`
+	name`         ==> `name`        <== `Name`
+	city`         ==> `city`        <== `City`
+	id`           ==> `id`          <== `ID`
+	http_address` ==> `httpaddress` <== `HTTPAddress`
 
 This way of determining which SQL column names go with which Go struct field
 names should cover a lot more of the standard naming conventions of both
